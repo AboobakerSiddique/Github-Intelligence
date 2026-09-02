@@ -1,241 +1,245 @@
-# GitHub Intelligence
+# GitHub Repository Intelligence
 
-Understand what a repository is really doing.
+**Understand what a repository is really doing.**
 
-GitHub Intelligence turns a public GitHub repository into an engineering
-intelligence dashboard: health scoring, activity and collaboration
-analytics, AI-generated insights, and repository comparison — in one place.
+GitHub Repository Intelligence turns any public GitHub repository into an
+engineering intelligence dashboard — health scoring, activity and
+collaboration analytics, AI-generated insights, and side-by-side repository
+comparison, all in one place.
 
-> **Status:** core product complete — repository analysis, health scoring,
-> engineering metrics, AI insights, and comparison are all implemented and
-> wired end to end. See [Roadmap](#roadmap) for what's left for a full
-> production launch (PDF export, command palette, deployment).
+**Live app:** https://github-intelligence-nine.vercel.app
+**API:** https://github-intelligence.onrender.com
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [API Reference](#api-reference)
+- [Deployment](#deployment)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Overview
+
+Point GitHub Repository Intelligence at any `owner/repo` on GitHub and it
+pulls activity, contributor, issue, pull request, and release data from the
+GitHub REST API, then turns it into:
+
+- a **health score** summarizing the overall state of the project
+- **engineering and collaboration metrics** (commit cadence, issue/PR
+  turnaround, contributor spread, release frequency)
+- **AI-generated narrative insights** explaining what the numbers mean
+- a **comparison view** for evaluating two repositories side by side
+
+It's built for developers evaluating dependencies, maintainers tracking
+project health, and anyone who wants a fast, structured read on a codebase
+without digging through the GitHub UI by hand.
+
+## Features
+
+- 🔍 **Repository Analysis** — activity, contributors, languages, releases
+  for any public repo
+- 📊 **Health Score** — a single composite score with contributing factors
+  broken out
+- 🤖 **AI Insights** — narrative summaries generated via Google Gemini
+- ⚖️ **Compare Mode** — put two repositories side by side on the same
+  metrics
+- ⚡ **Response Caching** — GitHub API responses cached server-side to stay
+  well under rate limits
+- 🔐 **Optional GitHub Token** — raises the GitHub API rate limit from
+  60/hr to 5,000/hr
+
+## Tech Stack
+
+**Frontend**
+- [Next.js 16](https://nextjs.org/) (App Router, Turbopack)
+- [React 19](https://react.dev/)
+- TypeScript
+- Tailwind CSS 4
+- [Recharts](https://recharts.org/) for data visualization
+- [Radix UI](https://www.radix-ui.com/) primitives + `class-variance-authority`
+- [Lucide](https://lucide.dev/) icons
+
+**Backend**
+- [FastAPI](https://fastapi.tiangolo.com/) (Python 3)
+- [Pydantic v2](https://docs.pydantic.dev/) for schema validation and settings
+- [httpx](https://www.python-httpx.org/) for async HTTP calls to GitHub and Gemini
+- [uvicorn](https://www.uvicorn.org/) ASGI server
+- [pytest](https://docs.pytest.org/) + `pytest-asyncio` + `respx` for testing
+
+**External services**
+- GitHub REST API — repository, contributor, issue, PR, and release data
+- Google Gemini API — AI-generated insight narratives
+
+**Hosting**
+- Frontend: [Vercel](https://vercel.com/)
+- Backend: [Render](https://render.com/)
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    User((User)) --> FE[Next.js Frontend]
-    FE --> BE[FastAPI Backend]
+    User((User)) --> FE[Next.js Frontend — Vercel]
+    FE -->|HTTPS / JSON| BE[FastAPI Backend — Render]
     BE --> GH[GitHub REST API]
-    BE --> AI[Gemini API]
-    BE --> Cache[(Response Cache)]
+    BE --> GEMINI[Google Gemini API]
+    BE --> CACHE[(In-memory response cache)]
 ```
 
-- **Frontend** — Next.js (App Router) + TypeScript + Tailwind CSS, deployed
-  to Vercel.
-- **Backend** — FastAPI + Pydantic + httpx, deployable to any container host
-  (Render, Railway, Fly.io, etc.). Owns all GitHub and Gemini API access —
-  no third-party credentials ever reach the browser.
-- **Data flow** — the frontend never talks to GitHub or Gemini directly; it
-  only calls the backend, which normalizes external responses into
-  application-specific schemas before returning them.
+The frontend never talks to GitHub or Gemini directly — every external call
+is proxied and cached through the FastAPI backend, so API keys and tokens
+stay server-side and are never exposed to the browser.
 
-## Tech stack
+## Project Structure
 
-| Layer    | Technology |
-|----------|------------|
-| Frontend | Next.js, TypeScript, Tailwind CSS, Radix primitives, Recharts, lucide-react |
-| Backend  | Python, FastAPI, Pydantic, httpx |
-| AI       | Google Gemini |
-| Testing  | pytest, pytest-asyncio, respx |
-
-## Project structure
-
-```text
+```
 github-intelligence/
 ├── backend/
-│   └── app/
-│       ├── main.py            # FastAPI app, CORS, router wiring
-│       ├── config.py          # Environment-driven settings
-│       ├── api/                # Route handlers
-│       ├── clients/            # External API clients (GitHub, Gemini)
-│       ├── services/           # Business logic
-│       ├── schemas/            # Pydantic request/response models
-│       └── utils/              # Logging, helpers
-│
+│   ├── app/
+│   │   ├── api/            # Route handlers (health, repositories, analytics, ai, compare)
+│   │   ├── clients/        # External API clients (GitHub, Gemini)
+│   │   ├── services/       # Business logic (analytics, AI narrative generation)
+│   │   ├── schemas/        # Pydantic request/response models
+│   │   ├── utils/          # Logging and shared helpers
+│   │   ├── config.py       # Settings (env-driven)
+│   │   └── main.py         # App entrypoint, middleware, router wiring
+│   ├── tests/
+│   ├── requirements.txt
+│   └── Dockerfile
 └── frontend/
-    ├── app/                    # Next.js App Router pages
+    ├── app/
+    │   ├── page.tsx                     # Home / search
+    │   ├── analyze/[owner]/[repo]/      # Repository analysis view
+    │   └── compare/                     # Comparison view
     ├── components/
-    │   ├── ui/                 # Base primitives (button, etc.)
-    │   ├── landing/             # Landing page sections
-    │   ├── repository/          # Dashboard sections (upcoming)
-    │   ├── charts/               # Chart wrappers (upcoming)
-    │   ├── ai/                   # AI chat/insights UI (upcoming)
-    │   └── layout/               # Header, footer, status
-    ├── lib/                    # API client, parsing/validation helpers
+    ├── lib/                             # API client helpers
     ├── hooks/
-    └── types/
+    └── package.json
 ```
 
-## Local setup
+## Getting Started
 
 ### Prerequisites
+
 - Node.js 20+
 - Python 3.12+
+- A [GitHub personal access token](https://github.com/settings/tokens) (optional but recommended)
+- A [Google Gemini API key](https://aistudio.google.com/apikey)
 
 ### Backend
 
 ```bash
 cd backend
-python3 -m venv venv
-source venv/bin/activate
+python -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env   # fill in GITHUB_TOKEN / GEMINI_API_KEY when needed
-uvicorn app.main:app --reload --port 8000
+cp .env.example .env          # then fill in the values, see below
+uvicorn app.main:app --reload
 ```
 
-Health check: `curl http://localhost:8000/api/health`
-API docs: http://localhost:8000/docs
+The API will be available at `http://localhost:8000`. Interactive docs at
+`http://localhost:8000/docs`.
 
 ### Frontend
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local
+cp .env.example .env          # then fill in the values, see below
 npm run dev
 ```
 
-App: http://localhost:3000
+The app will be available at `http://localhost:3000`.
 
-### Docker (backend)
-
-```bash
-cd backend
-docker build -t github-intelligence-api .
-docker run --env-file .env -p 8000:8000 github-intelligence-api
-```
-
-## Environment variables
-
-**backend/.env**
-
-| Variable | Description |
-|----------|-------------|
-| `ENVIRONMENT` | `development` or `production` |
-| `LOG_LEVEL` | Python logging level |
-| `GITHUB_TOKEN` | Personal access token; raises GitHub's rate limit from 60/hr to 5000/hr. No special scopes needed for public repos. |
-| `GEMINI_API_KEY` | Google Gemini API key, used for AI insights and "Ask this repository" |
-| `FRONTEND_URL` | Frontend origin, used for CORS |
-| `CACHE_TTL_SECONDS` | How long GitHub API responses are cached |
-
-**frontend/.env.local**
-
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_API_URL` | URL of the FastAPI backend |
-
-Secrets (`GITHUB_TOKEN`, `GEMINI_API_KEY`) live only in the backend
-environment and are never sent to or read by the frontend.
-
-## API
-
-Currently implemented:
-
-```text
-GET  /api/health
-
-GET  /api/repositories/{owner}/{repo}
-GET  /api/repositories/{owner}/{repo}/languages
-GET  /api/repositories/{owner}/{repo}/issues
-GET  /api/repositories/{owner}/{repo}/pulls
-GET  /api/repositories/{owner}/{repo}/contributors
-GET  /api/repositories/{owner}/{repo}/releases
-GET  /api/repositories/{owner}/{repo}/analytics      # health score + engineering metrics + activity
-POST /api/repositories/{owner}/{repo}/ai/summary     # AI engineering review
-POST /api/repositories/{owner}/{repo}/ai/ask         # "Ask this repository"
-POST /api/compare                                     # side-by-side comparison
-```
-
-Full interactive documentation is auto-generated by FastAPI at `/docs`.
-
-### Repository Health Score
-
-A transparent, deterministic 0-100 score computed from six weighted
-factors — activity, maintenance, issue health, pull request health,
-release health, and community engagement — each traced back to real data
-fetched for that repository. See `backend/app/services/analytics_service.py`
-for the exact methodology; it's also surfaced in the UI via "How is this
-calculated?" on the health score card.
-
-### AI insights
-
-The `ai/summary` and `ai/ask` endpoints call Google Gemini with a
-structured JSON context built entirely from fetched GitHub data — the
-model is instructed to reason over that data only, never to invent
-repository facts. Requires `GEMINI_API_KEY`; without it, these endpoints
-return a friendly 503 rather than failing silently.
-
-### Caching
-
-GitHub responses are cached in-memory (TTL from `CACHE_TTL_SECONDS`,
-default 300s) at the client request layer, so repeated calls for the same
-repository within the cache window don't re-hit GitHub's API. The
-interface (`app/utils/cache.py`) is intentionally small so a Redis-backed
-implementation can be swapped in later without touching callers.
-
-## Testing
+### Running Tests
 
 ```bash
 cd backend
 pytest
 ```
 
-Tests mock all external calls (GitHub, Gemini) — no real network calls are
-made in the unit test suite.
+## Environment Variables
 
-## Security
+### Backend (`backend/.env`)
 
-- GitHub and Gemini credentials are read from environment variables and
-  used only inside `backend/`; they are never included in any response
-  sent to the frontend.
-- CORS is restricted to the configured `FRONTEND_URL`.
-- No secrets are ever written to logs.
-- `.env` files are git-ignored; only `.env.example` files are committed.
+| Variable             | Required | Description                                                        |
+|-----------------------|----------|----------------------------------------------------------------------|
+| `ENVIRONMENT`          | No       | `development` or `production`                                     |
+| `LOG_LEVEL`            | No       | Logging verbosity (default `INFO`)                                |
+| `GITHUB_TOKEN`         | No       | Fine-grained PAT, no special scopes needed for public repo reads. Raises rate limit to 5,000/hr |
+| `GEMINI_API_KEY`       | Yes      | Google Gemini API key, used for AI insight generation              |
+| `FRONTEND_URL`         | Yes      | Exact origin of the deployed frontend, used for CORS. No trailing slash |
+| `CACHE_TTL_SECONDS`    | No       | How long GitHub API responses are cached (default `300`)          |
 
-## Frontend features
+### Frontend (`frontend/.env`)
 
-- **Dashboard** — tabbed repository view (Overview, Issues, Pull Requests,
-  Contributors, Releases, AI Insights), each tab lazily fetched
-- **Health score** — visual breakdown of all six factors with an
-  expandable methodology explanation
-- **Engineering metrics** — issue resolution rate, PR merge rate, release
-  cadence, bus factor, clearly labeled as estimates
-- **Language breakdown**, **activity timeline**, **contributor
-  distribution** with bus-factor note
-- **AI panel** — on-demand engineering review (summary/strengths/risks/
-  recommendations) plus a free-form "Ask this repository" chat with quick
-  question suggestions
-- **Compare** — side-by-side health, stars, forks, issues, contributors,
-  language, and license for any two repositories
-- **Share & export** — copy a stable `/analyze/{owner}/{repo}` link, or
-  export a Markdown engineering report generated from the currently loaded
-  dashboard data
-- **Recent repositories** — stored in `localStorage`, no backend/database
-  needed for anonymous users
-- Skeleton loaders and friendly error states (404 / rate-limit / network /
-  AI-unavailable) throughout
+| Variable                | Required | Description                                          |
+|--------------------------|----------|--------------------------------------------------------|
+| `NEXT_PUBLIC_API_URL`    | Yes      | Base URL of the deployed FastAPI backend. No trailing slash |
+
+> **Note:** `FRONTEND_URL` and `NEXT_PUBLIC_API_URL` must point at each
+> other's *exact* deployed origins (protocol + domain, no trailing slash) —
+> a mismatch here is the most common cause of "API offline" in the UI, since
+> the browser will silently block cross-origin requests that fail CORS.
+
+## API Reference
+
+Base URL: `https://github-intelligence.onrender.com`
+
+| Method | Endpoint                                          | Description                          |
+|--------|----------------------------------------------------|---------------------------------------|
+| GET    | `/api/health`                                       | Service health check                 |
+| GET    | `/api/repositories/{owner}/{repo}`                  | Core repository metadata             |
+| GET    | `/api/repositories/{owner}/{repo}/analytics`        | Health score + engineering metrics   |
+| POST   | `/api/ai/insights`                                  | AI-generated narrative insights      |
+| POST   | `/api/compare`                                      | Side-by-side comparison of two repos |
+
+Full interactive documentation (Swagger UI) is available at
+[`/docs`](https://github-intelligence.onrender.com/docs) on the live API.
+
+## Deployment
+
+This project is deployed as two independent services:
+
+- **Frontend** → [Vercel](https://vercel.com/), root directory `frontend`,
+  framework preset Next.js, auto-detected build/start commands.
+- **Backend** → [Render](https://render.com/) Web Service, root directory
+  `backend`, build command `pip install -r requirements.txt`, start command
+  `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+
+See [Environment Variables](#environment-variables) for the values each
+service needs — in particular, `FRONTEND_URL` on the backend and
+`NEXT_PUBLIC_API_URL` on the frontend must match each other's live URLs
+exactly for CORS to work.
 
 ## Roadmap
 
-Core product is complete. Remaining work for a full production launch:
+- [ ] PDF export of analysis reports
+- [ ] Command palette (⌘K) navigation
+- [ ] Historical trend tracking (health score over time)
+- [ ] GitHub OAuth for private repository support
+- [ ] Rate-limit-aware request queuing
 
-1. ~~Backend foundation~~ ✅
-2. ~~Frontend foundation~~ ✅
-3. ~~GitHub API client~~ ✅
-4. ~~Repository endpoint + normalized schemas~~ ✅
-5. ~~Repository dashboard (overview, health score, languages)~~ ✅
-6. ~~Issues, pull requests, contributors, releases, activity timeline~~ ✅
-7. ~~AI repository intelligence + "Ask this repository"~~ ✅
-8. ~~Repository comparison~~ ✅
-9. ~~Caching layer~~ ✅ (in-memory; Redis-ready interface)
-10. ~~Shareable URLs, export (Markdown), recent-history~~ ✅
-11. Production hardening — deeper accessibility pass, PDF export, command
-    palette (Ctrl+K), keyboard shortcuts, Open Graph metadata, mobile
-    layout polish beyond the current responsive baseline
-12. Deployment — Vercel (frontend) + Render/Railway/Fly.io (backend)
+## Contributing
+
+Contributions are welcome. Please open an issue to discuss significant
+changes before submitting a pull request.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes
+4. Push to your branch and open a pull request
 
 ## License
 
-Not yet decided.
+Distributed under the MIT License. See [`LICENSE`](./LICENSE) for details.
