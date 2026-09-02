@@ -1,0 +1,49 @@
+.ghi-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  text-decoration: none;
+  vertical-align: middle;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.ghi-badge:hover {
+  opacity: 0.85;
+}
+
+.ghi-badge.ghi-loading {
+  color: #6e7781;
+  background-color: #f6f8fa;
+  border-color: #d0d7de;
+}
+
+.ghi-badge.ghi-excellent {
+  color: #1a7f37;
+  background-color: #dafbe1;
+  border-color: #1a7f37;
+}
+
+.ghi-badge.ghi-good {
+  color: #0969da;
+  background-color: #ddf4ff;
+  border-color: #0969da;
+}
+
+.ghi-badge.ghi-fair {
+  color: #9a6700;
+  background-color: #fff8c5;
+  border-color: #9a6700;
+}
+
+.ghi-badge.ghi-attention {
+  color: #cf222e;
+  background-color: #ffebe9;
+  border-color: #cf222e;
+}

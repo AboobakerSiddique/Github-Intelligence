@@ -1,6 +1,41 @@
+import { API_BASE_URL } from "@/lib/api";
 import type { RepositoryOverview } from "@/types/repository";
 import type { RepositoryAnalytics } from "@/types/analytics";
 import type { AISummary } from "@/types/ai";
+
+export type ExportFormat = "markdown" | "pdf";
+
+/**
+ * Downloads a server-rendered report (Markdown or PDF) for the given
+ * repository from the backend's /export endpoints. Both formats are built
+ * from the same real repository data, so they never drift from each other
+ * or from the dashboard the user is looking at.
+ */
+export async function downloadServerReport(
+  owner: string,
+  repo: string,
+  format: ExportFormat
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/repositories/${owner}/${repo}/export/${format}`,
+    { headers: { Accept: format === "pdf" ? "application/pdf" : "text/markdown" } }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Export failed with status ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const extension = format === "pdf" ? "pdf" : "md";
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${owner}-${repo}-health-report.${extension}`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
 
 /**
  * Builds a Markdown engineering report from already-fetched dashboard
