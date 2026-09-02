@@ -4,8 +4,9 @@
 
 GitHub Repository Intelligence turns any public GitHub repository into an
 engineering intelligence dashboard — health scoring, activity and
-collaboration analytics, AI-generated insights, and side-by-side repository
-comparison, all in one place.
+collaboration analytics, AI-generated insights, side-by-side repository
+comparison, exportable reports, and a browser extension that surfaces
+health scores directly on GitHub.
 
 **Live app:** https://github-intelligence-nine.vercel.app
 **API:** https://github-intelligence.onrender.com
@@ -22,6 +23,7 @@ comparison, all in one place.
 - [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
 - [API Reference](#api-reference)
+- [Browser Extension](#browser-extension)
 - [Deployment](#deployment)
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
@@ -40,6 +42,8 @@ GitHub REST API, then turns it into:
   turnaround, contributor spread, release frequency)
 - **AI-generated narrative insights** explaining what the numbers mean
 - a **comparison view** for evaluating two repositories side by side
+- a **shareable Markdown or PDF report** for offline use or sharing
+- a **browser extension** that shows the health score right on the repo page
 
 It's built for developers evaluating dependencies, maintainers tracking
 project health, and anyone who wants a fast, structured read on a codebase
@@ -54,6 +58,10 @@ without digging through the GitHub UI by hand.
 - 🤖 **AI Insights** — narrative summaries generated via Google Gemini
 - ⚖️ **Compare Mode** — put two repositories side by side on the same
   metrics
+- 📄 **Export Reports** — download the full analysis as a Markdown or PDF
+  report, generated server-side from the same data shown on the dashboard
+- 🧩 **Browser Extension** — injects a color-coded health score badge
+  directly onto GitHub repo pages, linking back to the full dashboard
 - ⚡ **Response Caching** — GitHub API responses cached server-side to stay
   well under rate limits
 - 🔐 **Optional GitHub Token** — raises the GitHub API rate limit from
@@ -75,7 +83,11 @@ without digging through the GitHub UI by hand.
 - [Pydantic v2](https://docs.pydantic.dev/) for schema validation and settings
 - [httpx](https://www.python-httpx.org/) for async HTTP calls to GitHub and Gemini
 - [uvicorn](https://www.uvicorn.org/) ASGI server
+- [ReportLab](https://www.reportlab.com/) for server-side PDF report generation
 - [pytest](https://docs.pytest.org/) + `pytest-asyncio` + `respx` for testing
+
+**Browser Extension**
+- Manifest V3, vanilla JS content script (no build step, no frameworks)
 
 **External services**
 - GitHub REST API — repository, contributor, issue, PR, and release data
@@ -90,15 +102,17 @@ without digging through the GitHub UI by hand.
 ```mermaid
 flowchart TD
     User((User)) --> FE[Next.js Frontend — Vercel]
+    Ext[Browser Extension — content script] -->|HTTPS / JSON| BE
     FE -->|HTTPS / JSON| BE[FastAPI Backend — Render]
     BE --> GH[GitHub REST API]
     BE --> GEMINI[Google Gemini API]
     BE --> CACHE[(In-memory response cache)]
+    BE --> EXPORT[Markdown / PDF report builder]
 ```
 
-The frontend never talks to GitHub or Gemini directly — every external call
-is proxied and cached through the FastAPI backend, so API keys and tokens
-stay server-side and are never exposed to the browser.
+The frontend and extension never talk to GitHub or Gemini directly — every
+external call is proxied and cached through the FastAPI backend, so API
+keys and tokens stay server-side and are never exposed to the browser.
 
 ## Project Structure
 
@@ -106,9 +120,9 @@ stay server-side and are never exposed to the browser.
 github-intelligence/
 ├── backend/
 │   ├── app/
-│   │   ├── api/            # Route handlers (health, repositories, analytics, ai, compare)
+│   │   ├── api/            # Route handlers (health, repositories, analytics, ai, compare, export)
 │   │   ├── clients/        # External API clients (GitHub, Gemini)
-│   │   ├── services/       # Business logic (analytics, AI narrative generation)
+│   │   ├── services/       # Business logic (analytics, AI narrative generation, export/PDF)
 │   │   ├── schemas/        # Pydantic request/response models
 │   │   ├── utils/          # Logging and shared helpers
 │   │   ├── config.py       # Settings (env-driven)
@@ -116,15 +130,20 @@ github-intelligence/
 │   ├── tests/
 │   ├── requirements.txt
 │   └── Dockerfile
-└── frontend/
-    ├── app/
-    │   ├── page.tsx                     # Home / search
-    │   ├── analyze/[owner]/[repo]/      # Repository analysis view
-    │   └── compare/                     # Comparison view
-    ├── components/
-    ├── lib/                             # API client helpers
-    ├── hooks/
-    └── package.json
+├── frontend/
+│   ├── app/
+│   │   ├── page.tsx                     # Home / search
+│   │   ├── analyze/[owner]/[repo]/      # Repository analysis view
+│   │   └── compare/                     # Comparison view
+│   ├── components/
+│   ├── lib/                             # API client + export helpers
+│   ├── hooks/
+│   └── package.json
+└── extension/
+    ├── manifest.json        # Manifest V3 config
+    ├── content.js            # Detects repo pages, injects health badge
+    ├── content.css           # Badge styling
+    └── icons/
 ```
 
 ## Getting Started
@@ -191,31 +210,56 @@ pytest
 > other's *exact* deployed origins (protocol + domain, no trailing slash) —
 > a mismatch here is the most common cause of "API offline" in the UI, since
 > the browser will silently block cross-origin requests that fail CORS.
+>
+> CORS also permits any `chrome-extension://` origin, so the browser
+> extension's content script can call the analytics endpoint directly.
 
 ## API Reference
 
 Base URL: `https://github-intelligence.onrender.com`
 
-| Method | Endpoint                                          | Description                          |
-|--------|----------------------------------------------------|---------------------------------------|
-| GET    | `/api/health`                                       | Service health check                 |
-| GET    | `/api/repositories/{owner}/{repo}`                  | Core repository metadata             |
-| GET    | `/api/repositories/{owner}/{repo}/analytics`        | Health score + engineering metrics   |
-| POST   | `/api/ai/insights`                                  | AI-generated narrative insights      |
-| POST   | `/api/compare`                                      | Side-by-side comparison of two repos |
+| Method | Endpoint                                            | Description                          |
+|--------|-------------------------------------------------------|---------------------------------------|
+| GET    | `/api/health`                                          | Service health check                 |
+| GET    | `/api/repositories/{owner}/{repo}`                     | Core repository metadata             |
+| GET    | `/api/repositories/{owner}/{repo}/analytics`           | Health score + engineering metrics   |
+| GET    | `/api/repositories/{owner}/{repo}/export/markdown`     | Download analysis as a Markdown report |
+| GET    | `/api/repositories/{owner}/{repo}/export/pdf`          | Download analysis as a PDF report    |
+| POST   | `/api/ai/insights`                                     | AI-generated narrative insights      |
+| POST   | `/api/compare`                                         | Side-by-side comparison of two repos |
 
 Full interactive documentation (Swagger UI) is available at
 [`/docs`](https://github-intelligence.onrender.com/docs) on the live API.
 
+## Browser Extension
+
+A lightweight Manifest V3 extension in `extension/` injects a color-coded
+health score badge next to the repository name on any `github.com/{owner}/{repo}`
+page, using the same `/analytics` endpoint as the dashboard. Clicking the
+badge opens the full report.
+
+**Install (unpacked, for development):**
+
+1. Open `chrome://extensions`
+2. Enable **Developer mode**
+3. Click **Load unpacked** and select the `extension/` folder
+4. Visit any public GitHub repo — the badge appears within a second or two
+
+See [`extension/README.md`](./extension/README.md) for details and
+publishing notes.
+
 ## Deployment
 
-This project is deployed as two independent services:
+This project is deployed as two independent services, plus an optional
+browser extension:
 
 - **Frontend** → [Vercel](https://vercel.com/), root directory `frontend`,
   framework preset Next.js, auto-detected build/start commands.
 - **Backend** → [Render](https://render.com/) Web Service, root directory
   `backend`, build command `pip install -r requirements.txt`, start command
   `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+- **Extension** → loaded unpacked for development, or packaged and
+  submitted to the Chrome Web Store for distribution.
 
 See [Environment Variables](#environment-variables) for the values each
 service needs — in particular, `FRONTEND_URL` on the backend and
@@ -224,7 +268,11 @@ exactly for CORS to work.
 
 ## Roadmap
 
-- [ ] PDF export of analysis reports
+- [x] PDF/Markdown export of analysis reports
+- [x] Browser extension health badge
+- [ ] Chat with the repo (natural-language Q&A over repo data)
+- [ ] Anomaly detection (flag sudden drops in activity or contributor churn)
+- [ ] Auth + saved dashboards
 - [ ] Command palette (⌘K) navigation
 - [ ] Historical trend tracking (health score over time)
 - [ ] GitHub OAuth for private repository support
