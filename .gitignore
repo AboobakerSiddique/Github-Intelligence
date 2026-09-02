@@ -1,0 +1,35 @@
+# --- Environment / secrets ---
+.env
+.env.local
+.env.*.local
+!.env.example
+backend/.env
+frontend/.env.local
+
+# --- Node / frontend ---
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Python / backend ---
+backend/venv/
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+
+# --- Cache / misc ---
+.cache/
+*.log
+.DS_Store
+.vscode/
+.idea/

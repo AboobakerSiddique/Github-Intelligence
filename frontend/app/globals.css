@@ -1,0 +1,80 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+  Design tokens — GitHub Intelligence
+  Dark is the default surface (a dev tool lives in an editor-dark context),
+  with a git-diff-inspired duotone (muted green / muted coral) reserved for
+  signal (health, risk) rather than decoration, and a periwinkle accent for
+  interactive elements. Light theme mirrors the same relationships.
+*/
+:root {
+  --background: #F7F8FA;
+  --surface: #FFFFFF;
+  --surface-raised: #FFFFFF;
+  --border: #E2E5EB;
+  --foreground: #12151C;
+  --muted: #5B6373;
+
+  --accent: #4A63E0;       /* interactive / links / primary actions */
+  --accent-foreground: #FFFFFF;
+  --positive: #1E8A4C;     /* health / growth signal */
+  --positive-soft: #E4F5EA;
+  --risk: #C24A34;         /* risk / regression signal */
+  --risk-soft: #FBEAE6;
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #0B0D12;
+  --surface: #12151C;
+  --surface-raised: #171B24;
+  --border: #232733;
+  --foreground: #EDEFF3;
+  --muted: #8891A3;
+
+  --accent: #7C9CFF;
+  --accent-foreground: #0B0D12;
+  --positive: #5FD97A;
+  --positive-soft: rgba(95, 217, 122, 0.12);
+  --risk: #E8664A;
+  --risk-soft: rgba(232, 102, 74, 0.12);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-risk: var(--risk);
+  --color-risk-soft: var(--risk-soft);
+  --radius-md: var(--radius);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
