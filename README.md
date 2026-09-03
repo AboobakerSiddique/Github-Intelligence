@@ -58,6 +58,11 @@ without digging through the GitHub UI by hand.
 | Home | ![Home screenshot](./docs/screenshots/home.png) |
 | Repository Analysis | ![Analysis screenshot](./docs/screenshots/analysis.png) |
 | Health Score Breakdown | ![Health score screenshot](./docs/screenshots/health-score.png) |
+| Issues page | ![Issues screenshot](./docs/screenshots/issues.png) |
+| Pull Request Page | ![Pull request  screenshot](./docs/screenshots/pull-request.png) |
+| Contributors page | ![Contributors screenshot](./docs/screenshots/contibutors.png) |
+| Releases page | ![Releases screenshot](./docs/screenshots/releases.png) |
+| AI insight page | ![AI insight screenshot](./docs/screenshots/ai-insight.png) |
 | Compare Mode | ![Compare screenshot](./docs/screenshots/compare.png) |
 | Export (Markdown/PDF) | ![Export screenshot](./docs/screenshots/export.png) |
 
