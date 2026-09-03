@@ -1,0 +1,22 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a7f37"/>
+      <stop offset="100%" stop-color="#0f5c28"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+
+  <!-- Repository bracket motif -->
+  <path d="M 34 40 L 20 64 L 34 88" stroke="#ffffff" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/>
+  <path d="M 94 40 L 108 64 L 94 88" stroke="#ffffff" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.55"/>
+
+  <!-- Health pulse line -->
+  <path d="M 40 64 L 52 64 L 58 48 L 68 82 L 76 64 L 88 64"
+        stroke="#ffffff" stroke-width="8" stroke-linecap="round"
+        stroke-linejoin="round" fill="none"/>
+</svg>

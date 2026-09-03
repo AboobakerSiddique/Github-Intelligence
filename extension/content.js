@@ -7,7 +7,6 @@
  * the full dashboard.
  */
 
-const API_BASE = "https://github-intelligence.onrender.com";
 const DASHBOARD_BASE = "https://github-intelligence-nine.vercel.app";
 const BADGE_ID = "ghi-health-badge";
 
@@ -30,7 +29,14 @@ function getOwnerRepoFromUrl() {
 
 /** Finds the repo name heading GitHub renders on every repo page. */
 function findRepoNameElement() {
-  return document.querySelector('strong[itemprop="name"]');
+  // GitHub has changed this markup multiple times across redesigns.
+  // Try current selector first, then fall back to older ones for safety.
+  return (
+    document.querySelector("h1.heading-element") ||
+    document.querySelector('strong[itemprop="name"]') ||
+    document.querySelector('[data-testid="repository-title"]') ||
+    null
+  );
 }
 
 function removeExistingBadge() {
@@ -68,17 +74,21 @@ function renderBadge(anchorEl, { state, owner, repo, score, label }) {
     badge.textContent = `Health: ${score} · ${label}`;
   }
 
-  anchorEl.insertAdjacentElement("afterend", badge);
+  // Insert inline if the anchor is a heading (so badge sits next to the
+  // text rather than dropping to its own line); otherwise insert after.
+  if (anchorEl.tagName === "H1") {
+    anchorEl.appendChild(badge);
+  } else {
+    anchorEl.insertAdjacentElement("afterend", badge);
+  }
 }
 
 async function fetchHealth(owner, repo) {
-  const response = await fetch(
-    `${API_BASE}/api/repositories/${owner}/${repo}/analytics`,
-    { headers: { Accept: "application/json" } }
-  );
-  if (!response.ok) throw new Error(`Analytics request failed: ${response.status}`);
-  const data = await response.json();
-  return { score: data.health.overall, label: data.health.label };
+  const response = await chrome.runtime.sendMessage({ type: "FETCH_HEALTH", owner, repo });
+  if (!response || !response.ok) {
+    throw new Error(response?.error || "Analytics request failed");
+  }
+  return { score: response.score, label: response.label };
 }
 
 let lastKey = null;

@@ -13,6 +13,23 @@ the full analysis.
 5. Visit any public repo, e.g. `https://github.com/vercel/next.js` — a
    badge should appear next to the repo name within a second or two
 
+## Install (for other users, via GitHub release)
+
+1. Go to the [Releases page](https://github.com/AboobakerSiddique/github-intelligence/releases)
+   and download the latest `github-intelligence-extension.zip`
+2. Extract the `.zip` file to a folder
+3. Open `chrome://extensions` in Chrome
+4. Enable **Developer mode** (top right toggle)
+5. Click **Load unpacked** and select the extracted folder
+6. Visit any public GitHub repo — the badge should appear automatically
+
+This installs the extension in "developer mode," which Chrome shows a
+small warning banner for — that's expected for extensions not distributed
+through the Chrome Web Store, and does not affect functionality.
+
+**Privacy:** see [`PRIVACY.md`](./PRIVACY.md) for what data this extension
+sends and why.
+
 ## How it works
 
 - `manifest.json` — Manifest V3 config, content script runs on all
