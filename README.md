@@ -60,7 +60,7 @@ without digging through the GitHub UI by hand.
 | Health Score Breakdown | ![Health score screenshot](./docs/screenshots/health-score.png) |
 | Issues page | ![Issues screenshot](./docs/screenshots/issues.png) |
 | Pull Request Page | ![Pull request  screenshot](./docs/screenshots/pull-request.png) |
-| Contributors page | ![Contributors screenshot](./docs/screenshots/contibutors.png) |
+| Contributors page | ![Contributors screenshot](./docs/screenshots/contributors.png) |
 | Releases page | ![Releases screenshot](./docs/screenshots/releases.png) |
 | AI insight page | ![AI insight screenshot](./docs/screenshots/ai-insight.png) |
 | Compare Mode | ![Compare screenshot](./docs/screenshots/compare.png) |
