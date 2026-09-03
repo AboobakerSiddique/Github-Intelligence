@@ -10,12 +10,14 @@ health scores directly on GitHub.
 
 **Live app:** https://github-intelligence-nine.vercel.app
 **API:** https://github-intelligence.onrender.com
+**Browser extension:** [Latest release](https://github.com/AboobakerSiddique/Github-Intelligence/releases/tag/extension-v1.0.0)
 
 ---
 
 ## Table of Contents
 
 - [Overview](#overview)
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Architecture](#architecture)
@@ -48,6 +50,40 @@ GitHub REST API, then turns it into:
 It's built for developers evaluating dependencies, maintainers tracking
 project health, and anyone who wants a fast, structured read on a codebase
 without digging through the GitHub UI by hand.
+
+## Screenshots
+
+> Add real screenshots/GIFs to `docs/screenshots/` and `docs/gifs/`, then
+> update the paths below. Recommended: PNG for static screenshots (max
+> ~1600px wide), GIF or short MP4 for the extension demo (keep under ~10s
+> and a few MB so it loads quickly on GitHub).
+
+| View | Preview |
+|---|---|
+| Home / Search | ![Home screenshot](./docs/screenshots/home.png) |
+| Repository Analysis | ![Analysis screenshot](./docs/screenshots/analysis.png) |
+| Health Score Breakdown | ![Health score screenshot](./docs/screenshots/health-score.png) |
+| Compare Mode | ![Compare screenshot](./docs/screenshots/compare.png) |
+| Export (Markdown/PDF) | ![Export screenshot](./docs/screenshots/export.png) |
+
+**Browser extension in action:**
+
+![Extension demo](./docs/gifs/extension-demo.gif)
+
+<details>
+<summary>How to capture these</summary>
+
+- **Screenshots:** use your OS screenshot tool (macOS: `Cmd+Shift+4`,
+  Windows: `Win+Shift+S`), or a browser extension like GoFullPage for
+  full-page captures. Save as PNG into `docs/screenshots/`.
+- **GIFs:** record with [ScreenToGif](https://www.screentogif.com/) (Windows),
+  [Kap](https://getkap.co/) (macOS), or [Peek](https://github.com/phw/peek)
+  (Linux). Keep the extension demo short: navigate to a repo → badge
+  appears → click it → dashboard opens. Save into `docs/gifs/`.
+- Compress large GIFs with [ezgif.com](https://ezgif.com/optimize) before
+  committing — GitHub renders large GIFs slowly.
+
+</details>
 
 ## Features
 
@@ -87,7 +123,8 @@ without digging through the GitHub UI by hand.
 - [pytest](https://docs.pytest.org/) + `pytest-asyncio` + `respx` for testing
 
 **Browser Extension**
-- Manifest V3, vanilla JS content script (no build step, no frameworks)
+- Manifest V3, vanilla JS content script + background service worker (no
+  build step, no frameworks)
 
 **External services**
 - GitHub REST API — repository, contributor, issue, PR, and release data
@@ -102,7 +139,9 @@ without digging through the GitHub UI by hand.
 ```mermaid
 flowchart TD
     User((User)) --> FE[Next.js Frontend — Vercel]
-    Ext[Browser Extension — content script] -->|HTTPS / JSON| BE
+    User --> ExtUI[Browser Extension — content script]
+    ExtUI -->|message| ExtBG[Extension background service worker]
+    ExtBG -->|HTTPS / JSON| BE
     FE -->|HTTPS / JSON| BE[FastAPI Backend — Render]
     BE --> GH[GitHub REST API]
     BE --> GEMINI[Google Gemini API]
@@ -113,6 +152,12 @@ flowchart TD
 The frontend and extension never talk to GitHub or Gemini directly — every
 external call is proxied and cached through the FastAPI backend, so API
 keys and tokens stay server-side and are never exposed to the browser.
+
+The extension's content script (which runs in the context of github.com)
+delegates its data fetch to the extension's own background service worker
+rather than calling the API directly. This avoids the page's own CORS
+restrictions, since the background worker is authorized via the
+`host_permissions` declared in the extension's manifest.
 
 ## Project Structure
 
@@ -139,11 +184,16 @@ github-intelligence/
 │   ├── lib/                             # API client + export helpers
 │   ├── hooks/
 │   └── package.json
-└── extension/
-    ├── manifest.json        # Manifest V3 config
-    ├── content.js            # Detects repo pages, injects health badge
-    ├── content.css           # Badge styling
-    └── icons/
+├── extension/
+│   ├── manifest.json        # Manifest V3 config
+│   ├── background.js        # Service worker — proxies analytics fetch (avoids page CORS)
+│   ├── content.js           # Detects repo pages, injects health badge
+│   ├── content.css          # Badge styling
+│   ├── icons/
+│   └── PRIVACY.md           # What data the extension sends and why
+└── docs/
+    ├── screenshots/          # App screenshots used in this README
+    └── gifs/                 # Extension demo GIF(s) used in this README
 ```
 
 ## Getting Started
@@ -210,9 +260,6 @@ pytest
 > other's *exact* deployed origins (protocol + domain, no trailing slash) —
 > a mismatch here is the most common cause of "API offline" in the UI, since
 > the browser will silently block cross-origin requests that fail CORS.
->
-> CORS also permits any `chrome-extension://` origin, so the browser
-> extension's content script can call the analytics endpoint directly.
 
 ## API Reference
 
@@ -238,15 +285,32 @@ health score badge next to the repository name on any `github.com/{owner}/{repo}
 page, using the same `/analytics` endpoint as the dashboard. Clicking the
 badge opens the full report.
 
-**Install (unpacked, for development):**
+![Extension demo](./docs/gifs/extension-demo.gif)
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. Click **Load unpacked** and select the `extension/` folder
-4. Visit any public GitHub repo — the badge appears within a second or two
+**Install — download the release (recommended):**
 
-See [`extension/README.md`](./extension/README.md) for details and
-publishing notes.
+1. Download `github-intelligence-extension.zip` from the
+   [latest release](https://github.com/AboobakerSiddique/Github-Intelligence/releases/tag/extension-v1.0.0)
+2. Extract it to a folder
+3. Open `chrome://extensions` (or `edge://extensions`)
+4. Enable **Developer mode**
+5. Click **Load unpacked** and select the extracted folder
+6. Visit any public GitHub repo — the badge appears within a second or two
+
+Chrome shows a small "Developer mode extensions" banner for anything not
+installed via the Chrome Web Store — this is expected and doesn't affect
+functionality.
+
+**Install — from source (for development):**
+
+1. Clone this repo
+2. Open `chrome://extensions` → enable **Developer mode** → **Load unpacked**
+3. Select the `extension/` folder from your local clone
+
+**Privacy:** the extension only sends the repository `owner/name` (already
+visible in the page URL) to the backend to look up its health score. No
+personal data, tracking, or account access. Full details in
+[`extension/PRIVACY.md`](./extension/PRIVACY.md).
 
 ## Deployment
 
@@ -258,8 +322,10 @@ browser extension:
 - **Backend** → [Render](https://render.com/) Web Service, root directory
   `backend`, build command `pip install -r requirements.txt`, start command
   `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-- **Extension** → loaded unpacked for development, or packaged and
-  submitted to the Chrome Web Store for distribution.
+- **Extension** → distributed as a downloadable `.zip` via
+  [GitHub Releases](https://github.com/AboobakerSiddique/Github-Intelligence/releases),
+  loaded unpacked in developer mode. Not yet published to the Chrome Web
+  Store.
 
 See [Environment Variables](#environment-variables) for the values each
 service needs — in particular, `FRONTEND_URL` on the backend and
@@ -270,6 +336,7 @@ exactly for CORS to work.
 
 - [x] PDF/Markdown export of analysis reports
 - [x] Browser extension health badge
+- [ ] Publish extension to the Chrome Web Store
 - [ ] Chat with the repo (natural-language Q&A over repo data)
 - [ ] Anomaly detection (flag sudden drops in activity or contributor churn)
 - [ ] Auth + saved dashboards
