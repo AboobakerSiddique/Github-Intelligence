@@ -53,14 +53,9 @@ without digging through the GitHub UI by hand.
 
 ## Screenshots
 
-> Add real screenshots/GIFs to `docs/screenshots/` and `docs/gifs/`, then
-> update the paths below. Recommended: PNG for static screenshots (max
-> ~1600px wide), GIF or short MP4 for the extension demo (keep under ~10s
-> and a few MB so it loads quickly on GitHub).
-
 | View | Preview |
 |---|---|
-| Home / Search | ![Home screenshot](./docs/screenshots/home.png) |
+| Home | ![Home screenshot](./docs/screenshots/home.png) |
 | Repository Analysis | ![Analysis screenshot](./docs/screenshots/analysis.png) |
 | Health Score Breakdown | ![Health score screenshot](./docs/screenshots/health-score.png) |
 | Compare Mode | ![Compare screenshot](./docs/screenshots/compare.png) |
@@ -69,21 +64,6 @@ without digging through the GitHub UI by hand.
 **Browser extension in action:**
 
 ![Extension demo](./docs/gifs/extension-demo.gif)
-
-<details>
-<summary>How to capture these</summary>
-
-- **Screenshots:** use your OS screenshot tool (macOS: `Cmd+Shift+4`,
-  Windows: `Win+Shift+S`), or a browser extension like GoFullPage for
-  full-page captures. Save as PNG into `docs/screenshots/`.
-- **GIFs:** record with [ScreenToGif](https://www.screentogif.com/) (Windows),
-  [Kap](https://getkap.co/) (macOS), or [Peek](https://github.com/phw/peek)
-  (Linux). Keep the extension demo short: navigate to a repo → badge
-  appears → click it → dashboard opens. Save into `docs/gifs/`.
-- Compress large GIFs with [ezgif.com](https://ezgif.com/optimize) before
-  committing — GitHub renders large GIFs slowly.
-
-</details>
 
 ## Features
 
